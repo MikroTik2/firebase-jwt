@@ -1,6 +1,8 @@
 <template>
     <div class="container" >
+        
         <form class="flex flex-column gap-3" :style="{ width: '500px' }">
+            <h2>Sign Up</h2>
 
             <Message severity="warn" v-if="authStore.error"> {{ authStore.error }} </Message>
 
@@ -35,6 +37,7 @@
 
 <script setup>  
     import { ref } from 'vue';
+    import { useRouter } from 'vue-router';
     import { useAuthStore } from '@/stores/auth';
     import Loader from '@/components/Loader.vue';
     import InputText from 'primevue/inputtext';
@@ -43,11 +46,14 @@
     import Message from 'primevue/message';
 
     const authStore = useAuthStore();
+    const router = useRouter();
 
     const email = ref('');
     const password = ref('');
 
     const signup = async () => {
-        await authStore.signup({ email: email.value, password: password.value });
+        await authStore.auth({ email: email.value, password: password.value }, 'signup');
+
+        router.push('/product');
     };
 </script>

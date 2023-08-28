@@ -2,7 +2,7 @@ import { ref } from 'vue';
 import { defineStore } from 'pinia';
 import axios from 'axios'
 
-const apiKey = 'AIzaSyArhuQ6QW2tS9Q7gj1-E_TTjletLV7cdxk'
+const apiKey = import.meta.env.VITE_API_KEY_FIREBASE;
 
 export const useAuthStore = defineStore('authStore', () => {
 
@@ -17,17 +17,21 @@ export const useAuthStore = defineStore('authStore', () => {
     const error = ref('');
     const loader = ref(false);
     
-    const signup = async (payload) => {
+    const auth = async (payload, type) => {
+
+        const stringUrl = type === 'signup' ? 'SignUp' : 'signInWithPassword'; 
 
         error.value = '';
         loader.value = true;
 
         try {
 
-            let response = await axios.post(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${apiKey}`, {
+            let response = await axios.post(`https://identitytoolkit.googleapis.com/v1/accounts:${stringUrl}?key=${apiKey}`, {
                 ...payload,
                 returnSecureToken: true,
             });
+
+            console.log(response.data);
 
             userInfo.value = {
                 token: response.data.idToken,
@@ -37,7 +41,7 @@ export const useAuthStore = defineStore('authStore', () => {
                 expiresIn: response.data.expiresIn,
             };
 
-            loader.value = false;
+            localStorage.setItem("userTokens", JSON.stringify({ token: userInfo.value.token, expiresIn: userInfo.value.expiresIn, refreshToken: userInfo.value.refreshToken }));
 
         } catch (err) {
             switch (err.response.data.error.message) {
@@ -48,15 +52,29 @@ export const useAuthStore = defineStore('authStore', () => {
                 case 'OPERATION_NOT_ALLOWED':
                     error.value = "Operation not allowed";
                     break;
+
+                case 'EMAIL_NOT_FOUND':
+                    error.value = "Email not found";
+                    break;
+
+                case 'INVALID_PASSWORD':
+                    error.value = "Invalid password";
+                    break;
                 
+                case 'USER_DISABLED':
+                    error.value = "User disabled";
+
                 default:
                     error.value = 'Error';
                     break;
             };
 
+            throw error.value;
+
+        } finally {
             loader.value = false;
-        };
+        }
     };
 
-    return { signup, userInfo, error, loader };
+    return { auth, userInfo, error, loader };
 });
